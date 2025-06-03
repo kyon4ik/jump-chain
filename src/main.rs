@@ -12,7 +12,12 @@ mod menus;
 mod screens;
 mod theme;
 
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::asset::AssetMetaCheck;
+use bevy::core_pipeline::bloom::Bloom;
+use bevy::core_pipeline::tonemapping::Tonemapping;
+use bevy::prelude::*;
+use bevy::render::camera::ScalingMode;
+use bevy::window::WindowMode;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -36,6 +41,10 @@ impl Plugin for AppPlugin {
                     primary_window: Window {
                         title: "Jump Chain".to_string(),
                         fit_canvas_to_parent: true,
+                        #[cfg(feature = "dev")]
+                        present_mode: bevy::window::PresentMode::AutoNoVsync,
+                        mode: WindowMode::BorderlessFullscreen(MonitorSelection::Current),
+                        resizable: false,
                         ..default()
                     }
                     .into(),
@@ -71,7 +80,7 @@ impl Plugin for AppPlugin {
         app.configure_sets(Update, PausableSystems.run_if(in_state(Pause(false))));
 
         // Spawn the main camera.
-        app.add_systems(Startup, spawn_camera);
+        app.add_systems(Startup, (spawn_lights, spawn_camera).chain());
     }
 }
 
@@ -98,5 +107,43 @@ struct Pause(pub bool);
 struct PausableSystems;
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera"), Camera2d));
+    commands.spawn((
+        Name::new("Camera"),
+        Camera3d::default(),
+        Projection::Orthographic(OrthographicProjection {
+            scaling_mode: ScalingMode::FixedVertical {
+                viewport_height: 10.0,
+            },
+            scale: 2.0,
+            ..OrthographicProjection::default_3d()
+        }),
+        Transform::from_xyz(5.0, 7.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Camera {
+            hdr: true,
+            clear_color: ClearColorConfig::Custom(demo::theme::DARK_BLUE),
+            ..Default::default()
+        },
+        #[cfg(not(target_family = "wasm"))]
+        Msaa::Sample4,
+        Tonemapping::TonyMcMapface,
+        Bloom::NATURAL,
+    ));
+}
+
+fn spawn_lights(mut commands: Commands) {
+    // commands.insert_resource(AmbientLight {
+    //     color: demo::theme::THEME_YELLOW,
+    //     brightness: 80.0,
+    //     ..Default::default()
+    // });
+
+    commands.spawn((
+        Name::new("Directional Light"),
+        DirectionalLight {
+            illuminance: light_consts::lux::AMBIENT_DAYLIGHT,
+            shadows_enabled: true,
+            ..Default::default()
+        },
+        Transform::from_xyz(0.0, 10.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
 }

@@ -1,13 +1,23 @@
 //! Development tools for the game. This plugin is only enabled in dev builds.
 
-use bevy::{
-    dev_tools::states::log_transitions, input::common_conditions::input_just_pressed, prelude::*,
-    ui::UiDebugOptions,
-};
+use bevy::dev_tools::fps_overlay::{FpsOverlayConfig, FpsOverlayPlugin};
+use bevy::dev_tools::states::log_transitions;
+use bevy::diagnostic::FrameTimeDiagnosticsPlugin;
+use bevy::input::common_conditions::input_just_pressed;
+use bevy::prelude::*;
+use bevy::ui::UiDebugOptions;
 
 use crate::screens::Screen;
 
 pub(super) fn plugin(app: &mut App) {
+    // show fps
+    app.add_plugins((
+        FrameTimeDiagnosticsPlugin::default(),
+        FpsOverlayPlugin {
+            config: FpsOverlayConfig::default(),
+        },
+    ));
+
     // Log `Screen` state transitions.
     app.add_systems(Update, log_transitions::<Screen>);
 

@@ -1,11 +1,20 @@
 //! The screen state for the main gameplay.
 
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
+use bevy::input::common_conditions::input_just_pressed;
+use bevy::prelude::*;
+use bevy::ui::Val::*;
 
-use crate::{Pause, demo::level::spawn_level, menus::Menu, screens::Screen};
+use crate::Pause;
+use crate::demo::level::spawn_level;
+use crate::demo::movement::init_jump_state;
+use crate::menus::Menu;
+use crate::screens::Screen;
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
+    app.add_systems(
+        OnEnter(Screen::Gameplay),
+        (spawn_level, init_jump_state).chain(),
+    );
 
     // Toggle pause on key press.
     app.add_systems(
